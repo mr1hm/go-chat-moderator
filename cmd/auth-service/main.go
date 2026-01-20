@@ -1,10 +1,6 @@
 package main
 
 import (
-	"log"
-
-	"github.com/gin-gonic/gin"
-	"github.com/mr1hm/go-chat-moderator/internal/auth"
 	"github.com/mr1hm/go-chat-moderator/internal/shared/config"
 	"github.com/mr1hm/go-chat-moderator/internal/shared/redis"
 	"github.com/mr1hm/go-chat-moderator/internal/shared/sqlite"
@@ -23,11 +19,4 @@ func main() {
 
 	redis.Init(redisCfg.Addr)
 	defer redis.Close()
-
-	// Setup router
-	r := gin.Default()
-	auth.RegisterRoutes(r, jwtCfg.Secret)
-
-	log.Printf("API starting on %s", srvCfg.Port)
-	r.Run(srvCfg.Port)
 }

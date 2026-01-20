@@ -19,15 +19,15 @@ func main() {
 func migrate() {
 	// Users table
 	sqlite.DB.Exec(`
-  		CREATE TABLE IF NOT EXISTS messages (
+  		CREATE TABLE IF NOT EXISTS users (
   			id TEXT PRIMARY KEY,
-  			room_id TEXT REFERENCES rooms(id),
-  			user_id TEXT REFERENCES users(id),
-  			content TEXT NOT NULL,
-  			moderation_status TEXT DEFAULT 'pending',
-  			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		);
-	`)
+  			email TEXT UNIQUE NOT NULL,
+  			password_hash TEXT NOT NULL,
+  			username TEXT UNIQUE NOT NULL,
+  			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  		);
+  	`)
 
 	// Rooms table
 	sqlite.DB.Exec(`
