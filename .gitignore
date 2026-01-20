@@ -1,0 +1,28 @@
+# Binaries
+  *.exe
+  *.dll
+  *.so
+  *.dylib
+
+# Build output
+/bin/
+/dist/
+
+# Database
+/data/*.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Other
+BUILD_PLAN.md
