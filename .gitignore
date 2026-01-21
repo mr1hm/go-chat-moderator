@@ -9,7 +9,7 @@
 /dist/
 
 # Database
-/data/*.db
+/data/*.db*
 
 # IDE
 .idea/

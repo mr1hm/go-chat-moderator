@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/mr1hm/go-chat-moderator/internal/auth"
+	"github.com/mr1hm/go-chat-moderator/internal/chat"
 	"github.com/mr1hm/go-chat-moderator/internal/shared/config"
 	"github.com/mr1hm/go-chat-moderator/internal/shared/redis"
 	"github.com/mr1hm/go-chat-moderator/internal/shared/sqlite"
@@ -26,7 +27,12 @@ func main() {
 
 	// Setup router
 	r := gin.Default()
-	auth.RegisterRoutes(r, jwtCfg.Secret)
+
+	authHandler := auth.RegisterRoutes(r, jwtCfg.Secret)
+	hub := chat.NewHub()
+	go hub.Run()
+
+	chat.RegisterRoutes(r, hub, authHandler)
 
 	log.Printf("API starting on %s", srvCfg.Port)
 	r.Run(srvCfg.Port)

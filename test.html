@@ -1,0 +1,29 @@
+ <!DOCTYPE html>
+  <html>
+  <body>
+    <input id="msg" placeholder="Message">
+    <button onclick="send()">Send</button>
+    <pre id="log"></pre>
+    <script>
+      const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiODU2OTFhNjctODAxOS00Yjg4LThiNmUtYzNiYzQ4MTMzZTk0IiwidXNlcm5hbWUiOiJ0ZXN0dXNlciIsImV4cCI6MTc2OTExMzM5NCwiaWF0IjoxNzY5MDI2OTk0fQ.2y1iNwW0Hh4KSVNaFimNg_Ool6zsuTjFJTbjVYCe-hg";
+      const ROOM_ID = "e49988f8-3d82-4fb4-b211-7567e6ba7f5b";
+
+      const ws = new WebSocket(`ws://localhost:8080/ws/${ROOM_ID}?token=${TOKEN}`);
+
+      ws.onopen = () => log("Connected");
+      ws.onmessage = (e) => log("Received: " + e.data);
+      ws.onerror = (e) => log("Error: " + e);
+      ws.onclose = () => log("Disconnected");
+
+      function send() {
+        const content = document.getElementById("msg").value;
+        ws.send(JSON.stringify({content}));
+        log("Sent: " + content);
+      }
+
+      function log(msg) {
+        document.getElementById("log").textContent += msg + "\n";
+      }
+    </script>
+  </body>
+  </html>

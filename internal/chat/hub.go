@@ -70,7 +70,7 @@ func (h *Hub) removeClient(client *Client) {
 func (h *Hub) broadcastToRoom(msg *Message) {
 	h.mtx.RLock()
 	clients := h.rooms[msg.RoomID]
-	h.mtx.Unlock()
+	h.mtx.RUnlock()
 
 	data, _ := json.Marshal(WSMessage{
 		Type:    "message",

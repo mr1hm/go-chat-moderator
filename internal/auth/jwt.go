@@ -11,7 +11,8 @@ import (
 var ErrInvalidToken = errors.New("invalid token")
 
 type Claims struct {
-	UserID string `json:"user_id"`
+	UserID   string `json:"user_id"`
+	Username string `json:"username"`
 	jwt.RegisteredClaims
 }
 
@@ -27,9 +28,10 @@ func NewJWTService(secret string) *JWTService {
 	}
 }
 
-func (s *JWTService) Generate(userID string) (string, error) {
+func (s *JWTService) Generate(userID, username string) (string, error) {
 	claims := &Claims{
-		UserID: userID,
+		UserID:   userID,
+		Username: username,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.expiration)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

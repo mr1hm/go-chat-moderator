@@ -49,7 +49,7 @@ func (h *Handler) Register(c *gin.Context) {
 		return
 	}
 
-	token, err := h.jwtService.Generate(user.ID)
+	token, err := h.jwtService.Generate(user.ID, user.Username)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "failed to generate token",
@@ -80,7 +80,7 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := h.jwtService.Generate(user.ID)
+	token, err := h.jwtService.Generate(user.ID, user.Username)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "failed to generate token",
@@ -150,4 +150,8 @@ func RegisterRoutes(r *gin.Engine, jwtSecret string) *Handler {
 	r.GET("/profile", handler.AuthMiddleware(), handler.Profile)
 
 	return handler
+}
+
+func (h *Handler) JWTService() *JWTService {
+	return h.jwtService
 }
