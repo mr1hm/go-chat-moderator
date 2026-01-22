@@ -18,26 +18,26 @@ A real-time chat application with AI-powered content moderation using Go, React,
 │   Frontend  │────▶│   Backend   │────▶│   SQLite    │
 │   (React)   │◀────│    (Gin)    │     │             │
 └─────────────┘     └──────┬──────┘     └─────────────┘
-                          │
-                    ┌─────▼─────┐
-                    │   Redis   │
-                    │  Pub/Sub  │
-                    └─────┬─────┘
-                          │
-                    ┌─────▼─────┐
-                    │ Moderation│
-                    │  Worker   │
-                    └─────┬─────┘
-                          │
-                    ┌─────▼─────┐
-                    │ Mistral AI│
-                    └───────────┘
+                           │
+                     ┌─────▼─────┐
+                     │   Redis   │
+                     │  Pub/Sub  │
+                     └─────┬─────┘
+                           │
+                     ┌─────▼─────┐
+                     │ Moderation│
+                     │  Worker   │
+                     └─────┬─────┘
+                           │
+                     ┌─────▼─────┐
+                     │ Mistral AI│
+                     └───────────┘
 ```
 
 ## Tech Stack
 
 **Backend:**
-- Go 1.21+
+- Go 1.25+
 - Gin (HTTP framework)
 - Gorilla WebSocket
 - SQLite (database)
@@ -55,7 +55,7 @@ A real-time chat application with AI-powered content moderation using Go, React,
 
 ## Prerequisites
 
-- Go 1.21+
+- Go 1.25+
 - Node.js 20+
 - Docker (for Redis)
 - Mistral AI API key
@@ -161,6 +161,93 @@ Visit http://localhost:5173
 5. If toxic (score > 0.7), status = `flagged`
 6. Update broadcast to all room clients
 7. Frontend hides flagged messages
+
+## Scaling to Microservices
+
+The backend is designed for easy conversion to a microservice architecture. Here's how each component is already decoupled:
+
+### Current Architecture Benefits
+
+| Component | Why It's Ready |
+|-----------|----------------|
+| **API Server** | Stateless - no in-memory session state, JWT for auth |
+| **Moderation Worker** | Already a separate process, communicates via Redis queue |
+| **Redis Pub/Sub** | Handles cross-instance WebSocket broadcasts |
+| **Redis Queue** | Multiple workers can compete for moderation jobs |
+
+### Step-by-Step Conversion
+
+**1. Replace SQLite with PostgreSQL/MySQL**
+
+```go
+// internal/shared/postgres/db.go
+import "database/sql"
+import _ "github.com/lib/pq"
+
+var DB *sql.DB
+
+func Init(connStr string) error {
+    var err error
+    DB, err = sql.Open("postgres", connStr)
+    return err
+}
+```
+
+Update connection string in `.env`:
+```
+DATABASE_URL=postgres://user:pass@localhost:5432/chatmod
+```
+
+**2. Containerize Each Service**
+
+```dockerfile
+# Dockerfile.api
+FROM golang:1.25-alpine
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN go build -o api ./cmd/api
+CMD ["./api"]
+```
+
+```dockerfile
+# Dockerfile.moderation
+FROM golang:1.25-alpine
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN go build -o worker ./cmd/moderation-service
+CMD ["./worker"]
+```
+
+**3. Scale with Docker Compose**
+
+- Add `deploy.replicas: 3` to run multiple API instances
+- Add `deploy.replicas: 2` for multiple moderation workers
+- Workers automatically compete for queue items (no code changes needed)
+
+**4. Add Load Balancer**
+
+Use nginx or Traefik in front of API instances:
+- Enable `ip_hash` for sticky sessions (required for WebSocket)
+- Proxy WebSocket upgrade headers
+
+**5. Extract Services Further (Optional)**
+
+For full microservices, split into separate repos/modules:
+
+```
+chat-platform/
+├── api-gateway/          # Auth, routing, rate limiting
+├── chat-service/         # WebSocket handling, message storage
+├── moderation-service/   # AI moderation (already separate)
+├── user-service/         # User management, profiles
+└── shared/               # Protobuf definitions, shared types
+```
+
+Use gRPC or message queues for inter-service communication.
 
 ## License
 
