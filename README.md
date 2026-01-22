@@ -64,6 +64,17 @@ Open http://localhost:5173
                      └───────────┘
 ```
 
+## Design Decisions
+
+| Decision | Why |
+|----------|-----|
+| **SQLite over PostgreSQL** | No server needed, file-based, simple deployment. Repository pattern allows easy swap to Postgres later. |
+| **Redis for pub/sub + queue** | Already needed for moderation queue, reuse for real-time broadcasting avoids extra dependencies. |
+| **Embedded auth in API** | Auth and chat share scaling characteristics - every chat request needs JWT validation anyway. |
+| **Repository interfaces** | Business logic depends on abstractions, not implementations. Swap SQLite for Postgres or mocks without changing code. |
+| **Broadcast-first, persist async** | Real-time UX is priority. Messages broadcast instantly via Redis, then saved to DB in a goroutine. |
+| **Pure Go SQLite driver** | No CGO means easier cross-compilation and simpler builds. |
+
 ## Tech Stack
 
 **Backend:**
