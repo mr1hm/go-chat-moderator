@@ -11,5 +11,31 @@ services:
       timeout: 3s
       retries: 3
 
+  backend:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=:8080
+      - DB_PATH=/app/data/chat.db
+      - REDIS_ADDR=redis:6379
+      - JWT_SECRET=${JWT_SECRET:-secret}
+      - MISTRALAI_API_KEY=${MISTRALAI_API_KEY}
+    volumes:
+      - db_data:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
 volumes:
   redis_data:
+  db_data:

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Message, WSMessage, ModerationUpdate } from '../types';
 
-const WS_URL = 'ws://localhost:8080';
+const WS_URL = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`;
 
 export function useWebSocket(roomId: string, token: string | null) {
     const [messages, setMessages] = useState<Message[]>([]);
@@ -12,7 +12,7 @@ export function useWebSocket(roomId: string, token: string | null) {
         if (!token || !roomId) return;
 
         setStatus('connecting');
-        const ws = new WebSocket(`${WS_URL}/ws/${roomId}?token=${token}`)
+        const ws = new WebSocket(`${WS_URL}/${roomId}?token=${token}`)
         wsRef.current = ws;
 
         ws.onopen = () => setStatus('connected');

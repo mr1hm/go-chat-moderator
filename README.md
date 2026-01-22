@@ -41,6 +41,25 @@ cd frontend && npm install && npm run dev
 
 Open http://localhost:5173
 
+## Docker Deployment
+
+Deploy everything with a single command:
+
+```bash
+# Set your Mistral API key
+export MISTRALAI_API_KEY=your-mistral-api-key
+
+# Build and run
+docker-compose up -d --build
+```
+
+Open http://localhost:3000
+
+This starts:
+- **Redis** - message queue and pub/sub
+- **Backend** - API server + moderation worker
+- **Frontend** - React app served via nginx
+
 ## Architecture
 
 ```
