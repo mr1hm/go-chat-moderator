@@ -12,7 +12,7 @@ export function Rooms() {
     const { logout, user } = useAuth();
 
     useEffect(() => {
-        api.getRooms().then(setRooms).catch(console.error);
+        api.getRooms().then(data => setRooms(data || [])).catch(console.error);
     }, []);
 
     const handleCreateRoom = async (e: React.FormEvent) => {

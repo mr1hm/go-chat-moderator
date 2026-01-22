@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -31,16 +32,15 @@ func (h *Handler) Register(c *gin.Context) {
 
 	user, err := h.service.Register(&req)
 	if err != nil {
-		switch err {
-		case ErrEmailExists:
+		if errors.Is(err, ErrEmailExists) {
 			c.JSON(http.StatusConflict, gin.H{
 				"error": ErrEmailExists.Error(),
 			})
-		case ErrUsernameExists:
+		} else if errors.Is(err, ErrUsernameExists) {
 			c.JSON(http.StatusConflict, gin.H{
 				"error": ErrUsernameExists.Error(),
 			})
-		default:
+		} else {
 			fmt.Printf("error: %v\n", err)
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": "registration failed",
