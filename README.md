@@ -11,6 +11,36 @@ A real-time chat application with AI-powered content moderation using Go, React,
 - Cross-instance messaging (Redis pub/sub)
 - React TypeScript frontend
 
+## Quick Start
+
+```bash
+# 1. Clone and setup
+git clone https://github.com/mr1hm/go-chat-moderator.git
+cd go-chat-moderator
+cat > .env << EOF
+PORT=:8080
+DB_PATH=data/chat.db
+REDIS_ADDR=localhost:6379
+JWT_SECRET=secret
+MISTRALAI_API_KEY=your-mistral-api-key
+EOF
+
+# 2. Start Redis
+docker-compose up -d
+
+# 3. Run migrations
+go run ./cmd/migrate
+
+# 4. Start backend (2 terminals)
+export $(cat .env | xargs) && go run ./cmd/api
+export $(cat .env | xargs) && go run ./cmd/moderation-service
+
+# 5. Start frontend
+cd frontend && npm install && npm run dev
+```
+
+Open http://localhost:5173
+
 ## Architecture
 
 ```
@@ -109,6 +139,7 @@ Visit http://localhost:5173
 .
 ├── cmd/
 │   ├── api/                 # HTTP server & WebSocket
+│   ├── migrate/             # Database migrations
 │   └── moderation-service/  # AI moderation worker
 ├── internal/
 │   ├── auth/                # JWT authentication
