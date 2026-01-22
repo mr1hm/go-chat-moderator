@@ -59,7 +59,7 @@ func (w *Worker) processNext(ctx context.Context) {
 		return
 	}
 
-	// Call Perspective API
+	// Call MistralAI API
 	score, err := w.mistralai.Analyze(msg.Content)
 	if err != nil {
 		// If rate-limited, re-queue and back off
