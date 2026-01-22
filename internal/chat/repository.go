@@ -86,7 +86,9 @@ func NewMessageRepository() MessageRepository {
 }
 
 func (r *sqliteMessageRepo) Create(msg *Message) error {
-	msg.ID = uuid.New().String()
+	if msg.ID == "" {
+		msg.ID = uuid.New().String()
+	}
 	_, err := sqlite.DB.Exec(
 		`INSERT INTO messages (id, room_id, user_id, content, moderation_status) VALUES (?, ?, ?, ?, ?)`,
 		msg.ID, msg.RoomID, msg.UserID, msg.Content, "pending",
@@ -120,6 +122,11 @@ func (r *sqliteMessageRepo) FindByRoom(roomID string, limit int) ([]*Message, er
 			return nil, fmt.Errorf("error while scanning messages: %w", err)
 		}
 		messages = append(messages, msg)
+	}
+
+	// Reverse to get chronological order (oldest first)
+	for i, j := 0, len(messages)-1; i < j; i, j = i+1, j-1 {
+		messages[i], messages[j] = messages[j], messages[i]
 	}
 
 	return messages, rows.Err()

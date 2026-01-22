@@ -24,6 +24,10 @@
 .DS_Store
 Thumbs.db
 
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
 # Other
 BUILD_PLAN.md
 DECISIONS.md

@@ -121,11 +121,41 @@ func (h *Hub) subscribeRedis() {
 	defer pubsub.Close()
 
 	for msg := range pubsub.Channel() {
-		var message Message
-		if err := json.Unmarshal([]byte(msg.Payload), &message); err != nil {
+		var wsMsg WSMessage
+		if err := json.Unmarshal([]byte(msg.Payload), &wsMsg); err != nil {
 			log.Printf("error while unmarshaling message payload: %v", err)
 			continue
 		}
-		h.broadcastToRoom(&message)
+
+		// Extract RoomID from channel name (e.g. "chat:room-id" -> "room-id"
+		roomID := msg.Channel[5:] // Skip 'chat:' prefix
+
+		switch wsMsg.Type {
+		case "moderation_update", "message":
+			// Broadcast moderation update or regular messages as is
+			h.broadcastRaw(roomID, []byte(msg.Payload))
+		default:
+			// Legacy: Assume it's a raw message, wrap it
+			var message Message
+			if err := json.Unmarshal([]byte(msg.Payload), &message); err != nil {
+				log.Printf("error unmarshaling message: %v", err)
+				continue
+			}
+			h.broadcastToRoom(&message)
+		}
+	}
+}
+
+func (h *Hub) broadcastRaw(roomID string, data []byte) {
+	h.mtx.RLock()
+	clients := h.rooms[roomID]
+	h.mtx.RUnlock()
+
+	for client := range clients {
+		select {
+		case client.Send <- data:
+		default:
+			h.unregister <- client
+		}
 	}
 }
