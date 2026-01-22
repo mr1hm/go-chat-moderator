@@ -27,7 +27,7 @@ type Worker struct {
 
 type QueueItem struct {
 	Message    chat.Message `json:"message"`
-	RetryCount int          `json:"retry_count`
+	RetryCount int          `json:"retry_count"`
 }
 
 func NewWorker(apiKey string) *Worker {
