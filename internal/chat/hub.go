@@ -90,9 +90,20 @@ func (h *Hub) broadcastToRoom(msg *Message) {
 }
 
 func (h *Hub) QueueForModeration(msg *Message) {
-	data, err := json.Marshal(msg)
+	// Importing moderation pkg for the QueueItem struct
+	// would result in a circular dependency.
+	// Create one manually
+	item := struct {
+		Message    *Message
+		RetryCount int
+	}{
+		Message:    msg,
+		RetryCount: 0,
+	}
+
+	data, err := json.Marshal(item)
 	if err != nil {
-		log.Printf("error while marshaling message for moderation queue: %v", err)
+		log.Printf("error while marshaling queue item: %v", err)
 		return
 	}
 

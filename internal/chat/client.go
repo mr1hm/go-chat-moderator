@@ -65,16 +65,23 @@ func (c *Client) ReadPump() {
 func (c *Client) WritePump() {
 	defer c.Conn.Close()
 
-	for {
-		select {
-		case message, ok := <-c.Send:
-			if !ok {
-				return
-			}
-			if err := c.Conn.WriteMessage(websocket.TextMessage, message); err != nil {
-				log.Printf("error while writing to websocket: %v", err)
-				return
-			}
+	for message := range c.Send {
+		if err := c.Conn.WriteMessage(websocket.TextMessage, message); err != nil {
+			log.Printf("error while writing to websocket: %v", err)
+			return
 		}
 	}
+
+	// for {
+	// 	select {
+	// 	case message, ok := <-c.Send:
+	// 		if !ok {
+	// 			return
+	// 		}
+	// 		if err := c.Conn.WriteMessage(websocket.TextMessage, message); err != nil {
+	// 			log.Printf("error while writing to websocket: %v", err)
+	// 			return
+	// 		}
+	// 	}
+	// }
 }

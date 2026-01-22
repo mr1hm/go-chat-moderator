@@ -15,6 +15,7 @@ import (
 const (
 	queueKey       = "moderation:pending"
 	toxicThreshold = 0.70
+	maxRetries     = 5
 )
 
 type Worker struct {
@@ -22,6 +23,11 @@ type Worker struct {
 	messageRepo chat.MessageRepository
 	logRepo     ModerationLogRepository
 	ticker      *time.Ticker
+}
+
+type QueueItem struct {
+	Message    chat.Message `json:"message"`
+	RetryCount int          `json:"retry_count`
 }
 
 func NewWorker(apiKey string) *Worker {
@@ -53,19 +59,32 @@ func (w *Worker) processNext(ctx context.Context) {
 		return // Timeout or error, continue
 	}
 
-	var msg chat.Message
-	if err := json.Unmarshal([]byte(result[1]), &msg); err != nil {
-		log.Printf("failed to unmarshal message: %v", err)
+	var item QueueItem
+	if err := json.Unmarshal([]byte(result[1]), &item); err != nil {
+		log.Printf("failed to unmarshal queue item: %v", err)
 		return
 	}
 
 	// Call MistralAI API
-	score, err := w.mistralai.Analyze(msg.Content)
+	score, err := w.mistralai.Analyze(item.Message.Content)
 	if err != nil {
 		// If rate-limited, re-queue and back off
 		if strings.Contains(err.Error(), "429") {
-			log.Printf("rate limited, re-queueing message %s", msg.ID)
-			redis.Client.RPush(ctx, queueKey, result[1])
+			if item.RetryCount >= maxRetries {
+				log.Printf("max retries exceeded for message [ %s ], marking as failed", item.Message.ID)
+				w.messageRepo.UpdateStatus(item.Message.ID, "failed")
+				return
+			}
+
+			item.RetryCount++
+			log.Printf("rate limited, re-queueing message [ %s ] (attempt %d/%d)", item.Message.ID, item.RetryCount, maxRetries)
+
+			b, err := json.Marshal(item)
+			if err != nil {
+				log.Printf("error while marshaling item for retry: %v", err)
+				return
+			}
+			redis.Client.RPush(ctx, queueKey, b)
 			time.Sleep(5 * time.Second)
 			return
 		}
@@ -83,12 +102,12 @@ func (w *Worker) processNext(ctx context.Context) {
 	}
 
 	// Update message status
-	w.messageRepo.UpdateStatus(msg.ID, status)
+	w.messageRepo.UpdateStatus(item.Message.ID, status)
 
 	b, err := json.Marshal(chat.WSMessage{
 		Type: "moderation_update",
 		Payload: map[string]string{
-			"message_id": msg.ID,
+			"message_id": item.Message.ID,
 			"status":     status,
 		},
 	})
@@ -97,14 +116,14 @@ func (w *Worker) processNext(ctx context.Context) {
 		return
 	}
 
-	redis.Client.Publish(ctx, "chat:"+msg.RoomID, b)
+	redis.Client.Publish(ctx, "chat:"+item.Message.RoomID, b)
 
 	// Log moderation result
 	w.logRepo.Create(&ModerationLog{
-		MessageID:     msg.ID,
+		MessageID:     item.Message.ID,
 		ToxicityScore: score,
 		IsFlagged:     isFlagged,
 	})
 
-	log.Printf("Moderated message [ %s ]: score=%.2f status=%s", msg.ID, score, status)
+	log.Printf("Moderated message [ %s ]: score=%.2f status=%s", item.Message.ID, score, status)
 }
