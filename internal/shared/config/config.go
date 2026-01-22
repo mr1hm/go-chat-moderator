@@ -11,7 +11,7 @@ type Config struct {
 	RedisConfig
 	ServerConfig
 	JWTConfig
-	PerspectiveConfig
+	MistralAIConfig
 }
 
 // Individual service configs
@@ -27,7 +27,7 @@ type ServerConfig struct {
 type JWTConfig struct {
 	Secret string
 }
-type PerspectiveConfig struct {
+type MistralAIConfig struct {
 	Key string
 }
 
@@ -37,11 +37,11 @@ func init() {
 
 func NewConfig() *Config {
 	return &Config{
-		DBConfig:          LoadDBConfig(),
-		RedisConfig:       LoadRedisConfig(),
-		ServerConfig:      LoadServerConfig(),
-		JWTConfig:         LoadJWTConfig(),
-		PerspectiveConfig: LoadPerspectiveConfig(),
+		DBConfig:        LoadDBConfig(),
+		RedisConfig:     LoadRedisConfig(),
+		ServerConfig:    LoadServerConfig(),
+		JWTConfig:       LoadJWTConfig(),
+		MistralAIConfig: LoadMistralAIConfig(),
 	}
 }
 
@@ -81,12 +81,12 @@ func LoadJWTConfig() JWTConfig {
 		Secret: secret,
 	}
 }
-func LoadPerspectiveConfig() PerspectiveConfig {
-	apiKey := viper.GetString("PERSPECTIVE_API_KEY")
+func LoadMistralAIConfig() MistralAIConfig {
+	apiKey := viper.GetString("MISTRALAI_API_KEY")
 	if apiKey == "" {
-		log.Fatal("PERSPECTIVE_API_KEY environment variable missing")
+		log.Fatal("MISTRALAI_API_KEY environment variable missing")
 	}
-	return PerspectiveConfig{
+	return MistralAIConfig{
 		Key: apiKey,
 	}
 }

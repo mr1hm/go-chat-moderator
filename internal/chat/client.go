@@ -3,6 +3,7 @@ package chat
 import (
 	"log"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -42,14 +43,22 @@ func (c *Client) ReadPump() {
 		}
 
 		msg := &Message{
-			RoomID:   c.RoomID,
-			UserID:   c.UserID,
-			Username: c.Username,
-			Content:  req.Content,
+			RoomID:           c.RoomID,
+			UserID:           c.UserID,
+			Username:         c.Username,
+			Content:          req.Content,
+			ModerationStatus: "pending",
 		}
+
+		msg.ID = uuid.New().String()
 
 		// Publish to Redis (broadcasts to all instances)
 		c.Hub.PublishMessage(msg)
+
+		go func(m *Message) {
+			c.Hub.messageRepo.Create(m)
+			c.Hub.QueueForModeration(m)
+		}(msg)
 	}
 }
 

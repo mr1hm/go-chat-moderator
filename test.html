@@ -1,24 +1,31 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
   <html>
   <body>
     <input id="msg" placeholder="Message">
     <button onclick="send()">Send</button>
     <pre id="log"></pre>
     <script>
-      const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiODU2OTFhNjctODAxOS00Yjg4LThiNmUtYzNiYzQ4MTMzZTk0IiwidXNlcm5hbWUiOiJ0ZXN0dXNlciIsImV4cCI6MTc2OTExMzM5NCwiaWF0IjoxNzY5MDI2OTk0fQ.2y1iNwW0Hh4KSVNaFimNg_Ool6zsuTjFJTbjVYCe-hg";
-      const ROOM_ID = "e49988f8-3d82-4fb4-b211-7567e6ba7f5b";
+      const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNDE5ODZkYWEtOWIxMC00Mjk2LWEwODMtMWQ4ODI0MDE3ZDg1IiwidXNlcm5hbWUiOiJ0ZXN0dXNlciIsImV4cCI6MTc2OTEyMDY1MywiaWF0IjoxNzY5MDM0MjUzfQ.M4TfZu1JLJ9q2HVE0tr9xzJrQRSEEk2IQSAjA1Zc0Bo";
+      const ROOM_ID = "e92df5e8-f374-44b7-9277-17fb02dd3356";
 
       const ws = new WebSocket(`ws://localhost:8080/ws/${ROOM_ID}?token=${TOKEN}`);
 
       ws.onopen = () => log("Connected");
-      ws.onmessage = (e) => log("Received: " + e.data);
+      ws.onmessage = (e) => {
+        const data = JSON.parse(e.data);
+        if (data.type === "message") {
+          log(`[${data.payload.moderation_status}] ${data.payload.username}: ${data.payload.content}`);
+        } else if (data.type === "moderation_update") {
+          log(`Status update: ${data.payload.message_id} → ${data.payload.status}`);
+        }
+      };
       ws.onerror = (e) => log("Error: " + e);
       ws.onclose = () => log("Disconnected");
 
       function send() {
         const content = document.getElementById("msg").value;
         ws.send(JSON.stringify({content}));
-        log("Sent: " + content);
+        document.getElementById("msg").value = "";
       }
 
       function log(msg) {

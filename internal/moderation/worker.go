@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/mr1hm/go-chat-moderator/internal/chat"
-	"github.com/mr1hm/go-chat-moderator/internal/moderation/perspective"
+	"github.com/mr1hm/go-chat-moderator/internal/moderation/mistralai"
 	"github.com/mr1hm/go-chat-moderator/internal/shared/redis"
 )
 
@@ -17,7 +18,7 @@ const (
 )
 
 type Worker struct {
-	perspective *perspective.Client
+	mistralai   *mistralai.Client
 	messageRepo chat.MessageRepository
 	logRepo     ModerationLogRepository
 	ticker      *time.Ticker
@@ -25,7 +26,7 @@ type Worker struct {
 
 func NewWorker(apiKey string) *Worker {
 	return &Worker{
-		perspective: perspective.NewClient(apiKey),
+		mistralai:   mistralai.NewClient(apiKey),
 		messageRepo: chat.NewMessageRepository(),
 		logRepo:     NewModerationLogRepository(),
 		ticker:      time.NewTicker(time.Second),
@@ -59,9 +60,17 @@ func (w *Worker) processNext(ctx context.Context) {
 	}
 
 	// Call Perspective API
-	score, err := w.perspective.Analyze(msg.Content)
+	score, err := w.mistralai.Analyze(msg.Content)
 	if err != nil {
-		log.Printf("perspective API error: %v", err)
+		// If rate-limited, re-queue and back off
+		if strings.Contains(err.Error(), "429") {
+			log.Printf("rate limited, re-queueing message %s", msg.ID)
+			redis.Client.RPush(ctx, queueKey, result[1])
+			time.Sleep(5 * time.Second)
+			return
+		}
+
+		log.Printf("MistralAI API error: %v", err)
 		return
 	}
 
@@ -75,6 +84,20 @@ func (w *Worker) processNext(ctx context.Context) {
 
 	// Update message status
 	w.messageRepo.UpdateStatus(msg.ID, status)
+
+	b, err := json.Marshal(chat.WSMessage{
+		Type: "moderation_update",
+		Payload: map[string]string{
+			"message_id": msg.ID,
+			"status":     status,
+		},
+	})
+	if err != nil {
+		log.Printf("error while marshaling WSMessage: %v", err)
+		return
+	}
+
+	redis.Client.Publish(ctx, "chat:"+msg.RoomID, b)
 
 	// Log moderation result
 	w.logRepo.Create(&ModerationLog{

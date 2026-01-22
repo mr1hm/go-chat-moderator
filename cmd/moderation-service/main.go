@@ -16,7 +16,7 @@ import (
 func main() {
 	dbCfg := config.LoadDBConfig()
 	redisCfg := config.LoadRedisConfig()
-	perspectiveCfg := config.LoadPerspectiveConfig()
+	openAICfg := config.LoadMistralAIConfig()
 
 	sqlite.Init(dbCfg.DBPath)
 	defer sqlite.Close()
@@ -36,6 +36,6 @@ func main() {
 		cancel()
 	}()
 
-	worker := moderation.NewWorker(perspectiveCfg.Key)
+	worker := moderation.NewWorker(openAICfg.Key)
 	worker.Run(ctx)
 }

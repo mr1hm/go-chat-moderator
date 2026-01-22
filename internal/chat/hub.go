@@ -10,19 +10,21 @@ import (
 )
 
 type Hub struct {
-	rooms      map[string]map[*Client]bool // roomID -> clients
-	register   chan *Client
-	unregister chan *Client
-	broadcast  chan *Message
-	mtx        sync.RWMutex
+	rooms       map[string]map[*Client]bool // roomID -> clients
+	register    chan *Client
+	unregister  chan *Client
+	broadcast   chan *Message
+	messageRepo MessageRepository
+	mtx         sync.RWMutex
 }
 
 func NewHub() *Hub {
 	return &Hub{
-		rooms:      make(map[string]map[*Client]bool),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
-		broadcast:  make(chan *Message),
+		rooms:       make(map[string]map[*Client]bool),
+		register:    make(chan *Client),
+		unregister:  make(chan *Client),
+		broadcast:   make(chan *Message),
+		messageRepo: NewMessageRepository(),
 	}
 }
 
@@ -85,6 +87,16 @@ func (h *Hub) broadcastToRoom(msg *Message) {
 			h.unregister <- client
 		}
 	}
+}
+
+func (h *Hub) QueueForModeration(msg *Message) {
+	data, err := json.Marshal(msg)
+	if err != nil {
+		log.Printf("error while marshaling message for moderation queue: %v", err)
+		return
+	}
+
+	redis.Client.RPush(context.Background(), "moderation:pending", data)
 }
 
 func (h *Hub) PublishMessage(msg *Message) {
