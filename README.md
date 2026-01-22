@@ -18,20 +18,20 @@ A real-time chat application with AI-powered content moderation using Go, React,
 │   Frontend  │────▶│   Backend   │────▶│   SQLite    │
 │   (React)   │◀────│    (Gin)    │     │             │
 └─────────────┘     └──────┬──────┘     └─────────────┘
-                          │
-                    ┌─────▼─────┐
-                    │   Redis   │
-                    │  Pub/Sub  │
-                    └─────┬─────┘
-                          │
-                    ┌─────▼─────┐
-                    │ Moderation│
-                    │  Worker   │
-                    └─────┬─────┘
-                          │
-                    ┌─────▼─────┐
-                    │ Mistral AI│
-                    └───────────┘
+                           │
+                     ┌─────▼─────┐
+                     │   Redis   │
+                     │  Pub/Sub  │
+                     └─────┬─────┘
+                           │
+                     ┌─────▼─────┐
+                     │ Moderation│
+                     │  Worker   │
+                     └─────┬─────┘
+                           │
+                     ┌─────▼─────┐
+                     │ Mistral AI│
+                     └───────────┘
 ```
 
 ## Tech Stack
