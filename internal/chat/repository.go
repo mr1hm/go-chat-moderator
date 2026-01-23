@@ -99,8 +99,10 @@ func (r *sqliteMessageRepo) Create(msg *Message) error {
 
 func (r *sqliteMessageRepo) FindByRoom(roomID string, limit int) ([]*Message, error) {
 	rows, err := sqlite.DB.Query(
-		`SELECT id, room_id, user_id, content, moderation_status, created_at
-		 FROM messages WHERE room_id = ? ORDER BY created_at DESC LIMIT ?`,
+		`SELECT m.id, m.room_id, m.user_id, u.username, m.content, m.moderation_status, m.created_at
+		 FROM messages m
+		 JOIN users u ON m.user_id = u.id
+		 WHERE m.room_id = ? ORDER BY m.created_at DESC LIMIT ?`,
 		roomID, limit,
 	)
 	if err != nil {
@@ -115,6 +117,7 @@ func (r *sqliteMessageRepo) FindByRoom(roomID string, limit int) ([]*Message, er
 			&msg.ID,
 			&msg.RoomID,
 			&msg.UserID,
+			&msg.Username,
 			&msg.Content,
 			&msg.ModerationStatus,
 			&msg.CreatedAt,
