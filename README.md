@@ -60,6 +60,14 @@ This starts:
 - **Backend** - API server + moderation worker
 - **Frontend** - React app served via nginx
 
+### Clean Build
+
+To flush the database and Redis (fresh start):
+
+```bash
+docker-compose down -v && docker-compose up -d --build
+```
+
 ## Architecture
 
 ```
