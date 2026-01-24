@@ -1,5 +1,9 @@
 # Go Chat Moderator
 
+[![Tests](https://github.com/mr1hm/go-chat-moderator/actions/workflows/test.yml/badge.svg)](https://github.com/mr1hm/go-chat-moderator/actions/workflows/test.yml)
+
+Continuous Integration (CI): Tests run automatically on push/PR to master via GitHub Actions.
+
 A real-time chat application with AI-powered content moderation using Go, React, and Mistral AI.
 
 ## Features
