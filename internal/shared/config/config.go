@@ -14,7 +14,7 @@ type Config struct {
 	MistralAIConfig
 }
 
-// Individual service configs
+// Individual service configs for testing and modular services
 type DBConfig struct {
 	DBPath string
 }
