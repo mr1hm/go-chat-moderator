@@ -10,6 +10,7 @@ A real-time chat application with AI-powered content moderation using Go, React,
 
 - Real-time messaging via WebSocket
 - AI content moderation (Mistral AI)
+- RAG-powered FAQ bot with semantic search
 - User authentication (JWT)
 - Multi-room support
 - Cross-instance messaging (Redis pub/sub)
@@ -124,6 +125,8 @@ docker-compose down -v && docker-compose up -d --build
 
 **AI:**
 - Mistral AI (content moderation)
+- Mistral Embed (vector embeddings)
+- vek (cosine similarity for semantic search)
 
 ## Prerequisites
 
@@ -182,10 +185,12 @@ Visit http://localhost:5173
 ├── cmd/
 │   ├── api/                 # HTTP server & WebSocket
 │   ├── migrate/             # Database migrations
-│   └── moderation-service/  # AI moderation worker
+│   ├── moderation-service/  # AI moderation worker
+│   └── seed-faq/            # Seed FAQ data
 ├── internal/
 │   ├── auth/                # JWT authentication
 │   ├── chat/                # Chat logic, hub, client
+│   ├── faq/                 # RAG FAQ bot
 │   ├── moderation/          # Mistral AI integration
 │   └── shared/
 │       ├── redis/           # Redis client
@@ -211,6 +216,10 @@ Visit http://localhost:5173
 | POST | `/rooms` | Create a room |
 | GET | `/rooms/:id/messages` | Get room messages |
 | WS | `/ws/:roomId` | WebSocket connection |
+| POST | `/api/ask` | Ask FAQ bot a question |
+| POST | `/api/faqs` | Create FAQ entry |
+| GET | `/api/faqs` | List all FAQs |
+| DELETE | `/api/faqs/:id` | Delete FAQ |
 
 ## WebSocket Messages
 
@@ -234,6 +243,56 @@ Visit http://localhost:5173
 5. If toxic (score > 0.7), status = `flagged`
 6. Update broadcast to all room clients
 7. Frontend hides flagged messages
+
+## RAG Pipeline
+
+The FAQ bot uses Retrieval-Augmented Generation (RAG) to answer questions based on stored FAQ entries.
+
+```
+User Question
+    ↓
+Embed question (mistral-embed)
+    ↓
+Cosine similarity search (vek)
+    ↓
+Retrieve top 3 FAQ matches
+    ↓
+Inject into prompt as context
+    ↓
+Generate answer (mistral-small-latest)
+    ↓
+Return answer + sources
+```
+
+| Component | Implementation |
+|-----------|----------------|
+| **Embeddings** | Mistral `mistral-embed` model |
+| **Vector Search** | In-memory cosine similarity with `vek` |
+| **Storage** | SQLite (embeddings as JSON) |
+| **Generation** | Mistral `mistral-small-latest` |
+| **Chunking** | None needed - FAQ pairs are atomic units |
+
+### Seeding FAQs
+
+```bash
+go run cmd/seed-faq/main.go
+```
+
+### Example Request
+
+```bash
+curl -X POST http://localhost:8080/api/ask \
+  -H "Content-Type: application/json" \
+  -d '{"question": "How do I create a room?"}'
+```
+
+Response:
+```json
+{
+  "answer": "Log in to your account, then click the 'Create Room' button and enter a name for your room.",
+  "sources": ["How do I create a new chat room?"]
+}
+```
 
 ## Scaling to Microservices
 
