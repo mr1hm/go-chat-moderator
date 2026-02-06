@@ -62,7 +62,7 @@ func TestClient_Analyze_Success(t *testing.T) {
 	}
 
 	// Override the API URL for testing
-	originalURL := apiURL
+	originalURL := moderationURL
 	defer func() { _ = originalURL }() // Just to reference it
 
 	// We need to make a custom request to the test server

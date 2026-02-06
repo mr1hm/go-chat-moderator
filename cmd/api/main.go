@@ -7,6 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/mr1hm/go-chat-moderator/internal/auth"
 	"github.com/mr1hm/go-chat-moderator/internal/chat"
+	"github.com/mr1hm/go-chat-moderator/internal/faq"
+	"github.com/mr1hm/go-chat-moderator/internal/moderation/mistralai"
 	"github.com/mr1hm/go-chat-moderator/internal/shared/config"
 	"github.com/mr1hm/go-chat-moderator/internal/shared/redis"
 	"github.com/mr1hm/go-chat-moderator/internal/shared/sqlite"
@@ -26,6 +28,9 @@ func main() {
 	redis.Init(redisCfg.Addr)
 	defer redis.Close()
 
+	mistralCfg := config.LoadMistralAIConfig()
+	mistralClient := mistralai.NewClient(mistralCfg.Key)
+
 	// Setup router
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
@@ -40,6 +45,7 @@ func main() {
 	go hub.Run()
 
 	chat.RegisterRoutes(r, hub, authHandler)
+	faq.RegisterRoutes(r, mistralClient)
 
 	log.Printf("API starting on %s", srvCfg.Port)
 	r.Run(srvCfg.Port)

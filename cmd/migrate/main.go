@@ -62,5 +62,16 @@ func migrate() {
   		);
 	`)
 
+	// FAQs table (for RAG)
+	sqlite.DB.Exec(`
+		CREATE TABLE IF NOT EXISTS faqs (
+			id TEXT PRIMARY KEY,
+			question TEXT NOT NULL,
+			answer TEXT NOT NULL,
+			embedding TEXT,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		);
+	`)
+
 	log.Println("Tables created successfully")
 }
