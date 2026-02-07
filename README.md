@@ -11,6 +11,7 @@ A real-time chat application with AI-powered content moderation using Go, React,
 - Real-time messaging via WebSocket
 - AI content moderation (Mistral AI)
 - RAG-powered FAQ bot with semantic search
+- In-chat FAQ commands (type `/` to ask the AI)
 - User authentication (JWT)
 - Multi-room support
 - Cross-instance messaging (Redis pub/sub)
@@ -216,10 +217,10 @@ Visit http://localhost:5173
 | POST | `/rooms` | Create a room |
 | GET | `/rooms/:id/messages` | Get room messages |
 | WS | `/ws/:roomId` | WebSocket connection |
-| POST | `/api/ask` | Ask FAQ bot a question |
-| POST | `/api/faqs` | Create FAQ entry |
-| GET | `/api/faqs` | List all FAQs |
-| DELETE | `/api/faqs/:id` | Delete FAQ |
+| POST | `/ask` | Ask FAQ bot a question |
+| POST | `/faqs` | Create FAQ entry |
+| GET | `/faqs` | List all FAQs |
+| DELETE | `/faqs/:id` | Delete FAQ |
 
 ## WebSocket Messages
 
@@ -274,6 +275,8 @@ Return answer + sources
 
 ### Seeding FAQs
 
+FAQs are automatically seeded on first Docker startup. To manually seed (local dev):
+
 ```bash
 go run cmd/seed-faq/main.go
 ```
@@ -281,7 +284,7 @@ go run cmd/seed-faq/main.go
 ### Example Request
 
 ```bash
-curl -X POST http://localhost:8080/api/ask \
+curl -X POST http://localhost:8080/ask \
   -H "Content-Type: application/json" \
   -d '{"question": "How do I create a room?"}'
 ```
@@ -293,6 +296,16 @@ Response:
   "sources": ["How do I create a new chat room?"]
 }
 ```
+
+### In-Chat FAQ Commands
+
+Users can ask the FAQ bot directly from any chat room by prefixing their message with `/`:
+
+```
+/how do I create a room?
+```
+
+The question is sent to the RAG pipeline and the AI response appears locally (not broadcast to other users).
 
 ## Scaling to Microservices
 
