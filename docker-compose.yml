@@ -35,6 +35,17 @@ services:
       - "3000:80"
     depends_on:
       - backend
+  
+  seed-faq:
+    build:
+    command: ["/app/seed-faq"]
+    environment:
+      - DB_PATH=/app/data/chat.db
+      - MISTRALAI_API_KEY=${MISTRALAI_API_KEY}
+    volumes:
+      - db_data:/app/data
+    depends_on:
+      - backend
 
 volumes:
   redis_data:

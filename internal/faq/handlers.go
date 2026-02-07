@@ -115,7 +115,7 @@ func RegisterRoutes(r *gin.Engine, mistralClient *mistralai.Client) *Handler {
 	}()
 
 	handler := NewHandler(service)
-	api := r.Group("/api")
+	api := r.Group("")
 	api.Use(handler.requireReady())
 	api.POST("/ask", handler.Ask)
 	api.POST("/faqs", handler.CreateFAQ)

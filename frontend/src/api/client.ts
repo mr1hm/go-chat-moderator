@@ -46,4 +46,9 @@ export const api = {
 
     getMessages: (roomId: string, limit = 50) =>
         request<Message[]>(`/rooms/${roomId}/messages?limit=${limit}`),
+
+    askFAQ: (question: string) => request<{ answer: string }>('/ask', {
+        method: 'POST',
+        body: JSON.stringify({ question })
+    }),
 }
