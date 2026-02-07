@@ -11,6 +11,7 @@ COPY . .
 RUN CGO_ENABLED=0 go build -o bin/api ./cmd/api
 RUN CGO_ENABLED=0 go build -o bin/migrate ./cmd/migrate
 RUN CGO_ENABLED=0 go build -o bin/moderation ./cmd/moderation-service
+RUN CGO_ENABLED=0 go build -o bin/seed-faq ./cmd/seed-faq
 
 # Runtime
 FROM alpine:latest

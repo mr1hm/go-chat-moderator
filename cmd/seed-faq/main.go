@@ -44,6 +44,16 @@ func main() {
 	client := mistralai.NewClient(mistralCfg.Key)
 
 	repo := faq.NewFAQRepository()
+	// Check if already seeded
+	existing, err := repo.List()
+	if err != nil {
+		log.Fatal("Fatal while checking for existing FAQs")
+	}
+	if len(existing) > 0 {
+		log.Println("FAQs already seeded, skipping")
+		return
+	}
+
 	service := faq.NewRAGService(repo, client)
 
 	for _, item := range seedFAQs {

@@ -15,7 +15,6 @@ export function Chat() {
     const [faqMessages, setFaqMessages] = useState<Message[]>([]);
 
     const handleMessages = async(content: string) => {
-        console.log('handleMessage called:', content)
         if (content.startsWith('/')) {
             const question = content.slice(1).trim();
             if (!question) return;
