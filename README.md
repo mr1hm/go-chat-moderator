@@ -85,10 +85,10 @@ docker-compose down -v && docker-compose up -d --build
         ┌──────────────────┼───────────────────┤
         │                  │                   │
   ┌─────▼─────┐      ┌─────▼─────┐      ┌──────┴──────┐
-  │   Redis   │      │ Moderation│      │   FAQ RAG   │
-  │  Pub/Sub  │      │  Worker   │      │  (embed +   │
-  └───────────┘      └─────┬─────┘      │  search)    │
-                           │            └──────┬──────┘
+  │   Redis   │      │ Moderation│      │     FAQ     │
+  │  Pub/Sub  │      │  Worker   │      │ RAG System  │
+  └───────────┘      └─────┬─────┘      └──────┬──────┘
+                           │                   │
                      ┌─────▼───────────────────▼─────┐
                      │          Mistral AI           │
                      │   (moderation + embeddings)   │
