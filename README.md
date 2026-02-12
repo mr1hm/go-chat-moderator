@@ -236,12 +236,13 @@ Visit http://localhost:5173
 ## Moderation Flow
 
 1. User sends message via WebSocket
-2. Message saved with `pending` status
-3. Message queued in Redis for moderation
-4. Worker sends content to Mistral AI
-5. If toxic (score > 0.7), status = `flagged`
-6. Update broadcast to all room clients
-7. Frontend hides flagged messages
+2. Message broadcast instantly to room via Redis pub/sub
+3. Async: message saved to DB with `pending` status
+4. Async: message queued in Redis for moderation
+5. Worker picks up message, sends to Mistral AI
+6. If toxic (score > 0.7), status = `flagged`
+7. Status update broadcast to all room clients
+8. Frontend hides flagged messages
 
 ## RAG Pipeline
 
