@@ -9,11 +9,17 @@ import (
 	"github.com/mr1hm/go-chat-moderator/internal/shared/redis"
 )
 
+type broadcastItem struct {
+	roomID string
+	msg    *Message // if set, wrap in WSMessage
+	raw    []byte   // if msg is nil, send this raw
+}
+
 type Hub struct {
 	rooms       map[string]map[*Client]bool // roomID -> clients
 	register    chan *Client
 	unregister  chan *Client
-	broadcast   chan *Message
+	broadcast   chan broadcastItem
 	messageRepo MessageRepository
 	mtx         sync.RWMutex
 }
@@ -23,7 +29,7 @@ func NewHub() *Hub {
 		rooms:       make(map[string]map[*Client]bool),
 		register:    make(chan *Client),
 		unregister:  make(chan *Client),
-		broadcast:   make(chan *Message),
+		broadcast:   make(chan broadcastItem),
 		messageRepo: NewMessageRepository(),
 	}
 }
@@ -38,8 +44,12 @@ func (h *Hub) Run() {
 			h.addClient(client)
 		case client := <-h.unregister:
 			h.removeClient(client)
-		case msg := <-h.broadcast:
-			h.broadcastToRoom(msg)
+		case item := <-h.broadcast:
+			if item.msg != nil {
+				h.broadcastToRoom(item.msg)
+			} else {
+				h.broadcastRaw(item.roomID, item.raw)
+			}
 		}
 	}
 }
@@ -63,28 +73,44 @@ func (h *Hub) removeClient(client *Client) {
 	if clients, ok := h.rooms[client.RoomID]; ok {
 		if _, ok := clients[client]; ok {
 			delete(clients, client)
-			close(client.Send)
+			client.close()
 			log.Printf("Client %s left room %s", client.UserID, client.RoomID)
+
+			// Clean up empty rooms to prevent memory leaks
+			if len(clients) == 0 {
+				delete(h.rooms, client.RoomID)
+			}
 		}
 	}
 }
 
-func (h *Hub) broadcastToRoom(msg *Message) {
+// getClientsInRoom returns a copy of the clients slice for safe iteration
+func (h *Hub) getClientsInRoom(roomID string) []*Client {
 	h.mtx.RLock()
-	clients := h.rooms[msg.RoomID]
-	h.mtx.RUnlock()
+	defer h.mtx.RUnlock()
+
+	clients := h.rooms[roomID]
+	result := make([]*Client, 0, len(clients))
+	for client := range clients {
+		result = append(result, client)
+	}
+	return result
+}
+
+func (h *Hub) broadcastToRoom(msg *Message) {
+	clients := h.getClientsInRoom(msg.RoomID)
 
 	data, _ := json.Marshal(WSMessage{
 		Type:    "message",
 		Payload: msg,
 	})
 
-	for client := range clients {
+	for _, client := range clients {
 		select {
 		case client.Send <- data:
 		default:
 			// Client buffer full, disconnect
-			h.unregister <- client
+			h.removeClient(client)
 		}
 	}
 }
@@ -133,7 +159,7 @@ func (h *Hub) subscribeRedis() {
 		switch wsMsg.Type {
 		case "moderation_update", "message":
 			// Broadcast moderation update or regular messages as is
-			h.broadcastRaw(roomID, []byte(msg.Payload))
+			h.broadcast <- broadcastItem{roomID: roomID, raw: []byte(msg.Payload)}
 		default:
 			// Legacy: Assume it's a raw message, wrap it
 			var message Message
@@ -141,21 +167,20 @@ func (h *Hub) subscribeRedis() {
 				log.Printf("error unmarshaling message: %v", err)
 				continue
 			}
-			h.broadcastToRoom(&message)
+			h.broadcast <- broadcastItem{msg: &message}
 		}
 	}
 }
 
 func (h *Hub) broadcastRaw(roomID string, data []byte) {
-	h.mtx.RLock()
-	clients := h.rooms[roomID]
-	h.mtx.RUnlock()
+	clients := h.getClientsInRoom(roomID)
 
-	for client := range clients {
+	for _, client := range clients {
 		select {
 		case client.Send <- data:
 		default:
-			h.unregister <- client
+			// Client buffer full, disconnect
+			h.removeClient(client)
 		}
 	}
 }

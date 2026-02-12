@@ -2,18 +2,27 @@ package chat
 
 import (
 	"log"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
 type Client struct {
-	Hub      *Hub
-	Conn     *websocket.Conn
-	Send     chan []byte
-	UserID   string
-	Username string
-	RoomID   string
+	Hub       *Hub
+	Conn      *websocket.Conn
+	Send      chan []byte
+	UserID    string
+	Username  string
+	RoomID    string
+	closeOnce sync.Once // Ensures channel closed exactly once
+}
+
+// close safely closes the Send channel exactly once
+func (c *Client) close() {
+	c.closeOnce.Do(func() {
+		close(c.Send)
+	})
 }
 
 func NewClient(hub *Hub, conn *websocket.Conn, userID, username, roomID string) *Client {
@@ -71,17 +80,4 @@ func (c *Client) WritePump() {
 			return
 		}
 	}
-
-	// for {
-	// 	select {
-	// 	case message, ok := <-c.Send:
-	// 		if !ok {
-	// 			return
-	// 		}
-	// 		if err := c.Conn.WriteMessage(websocket.TextMessage, message); err != nil {
-	// 			log.Printf("error while writing to websocket: %v", err)
-	// 			return
-	// 		}
-	// 	}
-	// }
 }
