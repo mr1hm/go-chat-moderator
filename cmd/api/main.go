@@ -45,7 +45,7 @@ func main() {
 	go hub.Run()
 
 	chat.RegisterRoutes(r, hub, authHandler)
-	faq.RegisterRoutes(r, mistralClient)
+	faq.RegisterRoutes(r, mistralClient, authHandler)
 
 	log.Printf("API starting on %s", srvCfg.Port)
 	r.Run(srvCfg.Port)

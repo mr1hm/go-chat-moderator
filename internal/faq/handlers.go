@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/mr1hm/go-chat-moderator/internal/auth"
 	"github.com/mr1hm/go-chat-moderator/internal/moderation/mistralai"
 )
 
@@ -102,7 +103,7 @@ func (h *Handler) DeleteFAQ(c *gin.Context) {
 	})
 }
 
-func RegisterRoutes(r *gin.Engine, mistralClient *mistralai.Client) *Handler {
+func RegisterRoutes(r *gin.Engine, mistralClient *mistralai.Client, authHandler *auth.Handler) *Handler {
 	repo := NewFAQRepository()
 	service := NewRAGService(repo, mistralClient)
 
@@ -115,12 +116,18 @@ func RegisterRoutes(r *gin.Engine, mistralClient *mistralai.Client) *Handler {
 	}()
 
 	handler := NewHandler(service)
-	api := r.Group("")
-	api.Use(handler.requireReady())
-	api.POST("/ask", handler.Ask)
-	api.POST("/faqs", handler.CreateFAQ)
-	api.GET("/faqs", handler.ListFAQs)
-	api.DELETE("/faqs/:id", handler.DeleteFAQ)
+
+	// Public routes (no auth required)
+	public := r.Group("")
+	public.Use(handler.requireReady())
+	public.POST("/ask", handler.Ask)
+	public.GET("/faqs", handler.ListFAQs)
+
+	// Protected routes (auth required)
+	protected := r.Group("")
+	protected.Use(handler.requireReady(), authHandler.AuthMiddleware())
+	protected.POST("/faqs", handler.CreateFAQ)
+	protected.DELETE("/faqs/:id", handler.DeleteFAQ)
 
 	return handler
 }
