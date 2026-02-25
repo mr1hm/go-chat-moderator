@@ -16,9 +16,15 @@ type Handler struct {
 	jwtService  *auth.JWTService
 }
 
+var allowedOrigins = map[string]bool{
+	"http://localhost:5173": true,
+	"http://localhost:3000": true,
+}
+
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		return true
+		origin := r.Header.Get("Origin")
+		return allowedOrigins[origin]
 	},
 }
 
